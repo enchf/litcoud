@@ -74,8 +74,8 @@ public class OddEvenJump {
             current = graph[i];
             pool.remove(current);
 
-            nextOdd = pool.higher(current);
-            nextEven = pool.lower(current);
+            nextOdd = pool.ceiling(current);
+            nextEven = pool.floor(current);
 
             if (nextOdd != null) {
                 nextOdd.odds.add(current);
