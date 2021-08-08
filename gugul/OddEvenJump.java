@@ -1,9 +1,11 @@
 package gugul;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeSet;
+
+import java.util.stream.Collectors;
 
 public class OddEvenJump {
 
@@ -12,18 +14,43 @@ public class OddEvenJump {
         int index;
 
         // incoming
-        List<Node> odds = new ArrayList<>();
-        List<Node> evens = new ArrayList<>();
-        
-        // outcoming;
-        Node odd;
-        Node even;
+        Set<Node> odds = new HashSet<>();
+        Set<Node> evens = new HashSet<>();
 
         public String toString() {
-            return String.format("[%d at %d]\nOdd: %d\nEven: %d", 
-                                 value, index,
-                                 odd != null ? odd.value : -1,
-                                 even != null ? even.value : -1);
+            return String.format("\n[%d at %d] - Incoming odds: [%s] - Incoming evens: [%s]", 
+                                 value, index, print(odds), print(evens));
+        }
+
+        public static String print(Set<Node> nodes) {
+            return nodes.stream().map((node) -> String.valueOf(node.value)).collect(Collectors.joining(","));
+        }
+    }
+
+    public static class Jump {
+        Node node;
+        boolean odd;
+
+        public Jump(Node node, boolean odd) {
+            this.node = node;
+            this.odd = odd;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof Jump))
+                return false;
+            Jump other = (Jump)o;
+            return node == other.node && odd == other.odd;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 17;
+            result = 31 * result + node.hashCode();
+            return 31 * result + (odd ? 1 : 0);
         }
     }
 
@@ -31,6 +58,7 @@ public class OddEvenJump {
         Node[] graph = new Node[input.length];
         TreeSet<Node> pool = new TreeSet<>((a, b) -> a.value == b.value ? a.index - b.index : a.value - b.value);
         
+        // graph vertex init, sort values keeping index.
         for (int i = 0; i < input.length; i++) {
             graph[i] = new Node();
             graph[i].value = input[i];
@@ -50,19 +78,47 @@ public class OddEvenJump {
             nextEven = pool.lower(current);
 
             if (nextOdd != null) {
-                current.odd = nextOdd;
                 nextOdd.odds.add(current);
             }
 
             if (nextEven != null) {
-                current.even = nextEven;
                 nextEven.evens.add(current);
             }
         }
 
-        System.out.println(Arrays.toString(graph));
+        // path building from backwards.
+        boolean[] odds = new boolean[graph.length];
+        boolean[] evens = new boolean[graph.length];
+        Set<Jump> paths = new HashSet<>();
+        Jump next;
 
-        return 1;
+        int lastIndex = graph.length - 1;
+        Node last = graph[lastIndex];
+        
+        odds[lastIndex] = true;
+        evens[lastIndex] = true;
+        
+        for (Node node : last.odds) paths.add(new Jump(node, true));
+        for (Node node : last.evens) paths.add(new Jump(node, false));
+
+        while (!paths.isEmpty()) {
+            next = paths.iterator().next();
+            paths.remove(next);
+
+            if (next.odd && !evens[next.node.index]) {
+                evens[next.node.index] = true;
+                for (Node node : next.node.evens) paths.add(new Jump(node, false));
+            } else if (!next.odd && !odds[next.node.index]) {
+                odds[next.node.index] = true;
+                for (Node node : next.node.odds) paths.add(new Jump(node, true));
+            }
+        }
+
+        // count nodes that reach the end.
+        int count = 0;
+        for (int i = 0; i < odds.length; i++) count += odds[i] || evens[i] ? 1 : 0;
+
+        return count;
     }
 
     public static void main(String...args) {

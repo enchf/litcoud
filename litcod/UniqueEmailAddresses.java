@@ -1,3 +1,8 @@
+package litcod;
+
+import java.util.Set;
+import java.util.HashSet;
+
 class UniqueEmailAddresses {
     public int numUniqueEmails(String[] emails) {
         Set<String> set = new HashSet<>();
