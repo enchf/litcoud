@@ -13,19 +13,20 @@ fun Vertex.printSimple() = "[$value at $index]"
 fun Vertex.print() =
     { set: Set<Vertex> -> set.map { it.value }.joinToString(",") }
     .let { "\n${printSimple()} - Odds: ${it(odds)}, Evens: ${it(evens)}" }
+fun Vertex.addAll(odd: Boolean, target: MutableSet<Jump>) =
+    (if (odd) odds else evens).forEach { target.add(Jump(it, odd)) }
 
 class OddEvenJumpGraph(input: List<Int>) {
-    val graph : List<Vertex>
-    val oddTree = TreeSet<Vertex> { a, b -> if (a.value == b.value) a.index - b.index else a.value - b.value }
-    val evenTree = TreeSet<Vertex> { a, b -> if (a.value == b.value) a.index - b.index else b.value - a.value }
+    private val graph : List<Vertex>
+    private val oddTree = TreeSet<Vertex> { a, b -> if (a.value == b.value) a.index - b.index else a.value - b.value }
+    private val evenTree = TreeSet<Vertex> { a, b -> if (a.value == b.value) a.index - b.index else b.value - a.value }
 
     init {
         graph = input.withIndex().map { (i, v) -> Vertex(v, i) }
         oddTree.addAll(graph)
         evenTree.addAll(graph)
-    }
 
-    fun build(): Int {
+        // build graph
         graph.forEach {
             val old = it.index
             it.index = -1
@@ -38,10 +39,30 @@ class OddEvenJumpGraph(input: List<Int>) {
 
             it.index = old
         }
+    }
 
-        graph.map(Vertex::print).let(::println)
+    fun build(): Int {
+        val visited = BooleanArray(graph.size) { false }
+        val paths = mutableSetOf<Jump>()
+        val last = graph.last()
 
-        return 1
+        visited[last.index] = true
+        last.addAll(true, paths)
+        last.addAll(false, paths)
+
+        while (paths.isNotEmpty()) {
+            val next = paths.first()
+            paths.remove(next)
+
+            if (next.odd && !visited[next.vertex.index]) {
+                visited[next.vertex.index] = true
+                next.vertex.addAll(false, paths)
+            } else {
+                next.vertex.addAll(true, paths)
+            }
+        }
+
+        return visited.count { it }
     }
 }
 
